@@ -11,7 +11,9 @@ import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,7 +69,8 @@ public class BeanConfig {
 	@SneakyThrows
 	public RedissonClient redissonClient(){
 		// 加载 YAML 配置文件
-		org.redisson.config.Config config = org.redisson.config.Config.fromYAML("redisson-config.yml");
+		ClassPathResource configFile = new ClassPathResource("redisson-config.yaml");
+		org.redisson.config.Config config = org.redisson.config.Config.fromYAML(configFile.getInputStream());
 	    return Redisson.create(config);
 	}
 

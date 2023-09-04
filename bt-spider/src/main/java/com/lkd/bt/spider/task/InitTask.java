@@ -59,6 +59,7 @@ public class InitTask extends Task{
         this.bencode = bencode;
         this.udpProcessorManager = udpProcessorManager;
         this.udpServerHandlers = getInitUdpServerHandlers();
+        this.name = "InitTask";
     }
     /**
      * DHT服务端处理器
@@ -132,7 +133,7 @@ public class InitTask extends Task{
                         .channel()
                         .closeFuture()
                         .await();
-                log.debug("{}DHT服务关闭",LOG);
+                log.info("{}DHT服务关闭",LOG);
             } catch (Exception e) {
                 log.error("{},端口:{},发生未知异常,准备重新启动.异常:{}", LOG, port, e.getMessage(), e);
             }
@@ -155,10 +156,10 @@ public class InitTask extends Task{
             try {
                 map = bencode.decode(bytes, Map.class);
             } catch (BTException e) {
-                log.debug("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage());
+                log.info("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage());
                 return;
             } catch (Exception e) {
-                log.debug("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage(), e);
+                log.info("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage(), e);
                 return;
             }
             //解析出Message
@@ -166,10 +167,10 @@ public class InitTask extends Task{
             try {
                 message = BTUtil.getMessage(map);
             } catch (BTException e) {
-                log.debug("{}解析MessageInfo异常.异常:{}", LOG, e.getMessage());
+                log.info("{}解析MessageInfo异常.异常:{}", LOG, e.getMessage());
                 return;
             } catch (Exception e) {
-                log.debug("{}解析MessageInfo异常.异常:{}", LOG, e.getMessage(), e);
+                log.info("{}解析MessageInfo异常.异常:{}", LOG, e.getMessage(), e);
                 return;
             }
             udpProcessorManager.process(new Process(message, map, sender, this.index));

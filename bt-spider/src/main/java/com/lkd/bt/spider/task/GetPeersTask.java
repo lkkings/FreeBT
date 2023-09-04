@@ -60,6 +60,7 @@ public class GetPeersTask extends Task implements Pauseable {
 		this.filter = filter;
 		this.lock = new ReentrantLock();
 		this.condition = this.lock.newCondition();
+		this.name = "GetPeersTask";
 	}
 
 	/**

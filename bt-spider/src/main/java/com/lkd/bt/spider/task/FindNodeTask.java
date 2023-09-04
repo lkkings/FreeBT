@@ -54,7 +54,7 @@ public class FindNodeTask extends Task implements Pauseable {
         // 如果插入失败
         if(!queue.offerFirst(address)){
             //从末尾移除一个
-            log.debug(LOG+"-队列已满");
+            log.info(LOG+"-队列已满");
             queue.pollLast();
         }
     }

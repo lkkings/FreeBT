@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 @Slf4j
 public class FetchMetadataTask extends Task{
-	private static final String LOG = "[FetchMetadataByPeerTask]";
+	private static final String LOG = "[FetchMetadataTask]";
 
 	private final Config config;
 	private final TCPServerFactory tcpServerFactory;
@@ -61,6 +61,7 @@ public class FetchMetadataTask extends Task{
 		this.objectMapper = objectMapper;
 		this.metadataService = metadataService;
 		this.queue = new DelayQueue<>();
+		this.name = "FetchMetadataTask";
 	}
 
 

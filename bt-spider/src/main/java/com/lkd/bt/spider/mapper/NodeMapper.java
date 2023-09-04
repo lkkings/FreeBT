@@ -17,5 +17,5 @@ import java.util.List;
  */
 @Mapper
 public interface NodeMapper extends BaseMapper<Node> {
-    List<Node> findTopNode(@Param("size") int size);
+    List<Node> findTopNode(@Param("top") int top);
 }
