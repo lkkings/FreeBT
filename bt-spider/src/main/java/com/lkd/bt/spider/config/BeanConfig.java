@@ -3,11 +3,6 @@ package com.lkd.bt.spider.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lkd.bt.spider.socket.RoutingTable;
-import com.lkd.bt.spider.socket.Sender;
-import com.lkd.bt.spider.socket.core.UDPProcessor;
-import com.lkd.bt.spider.socket.core.UDPProcessorManager;
-import com.lkd.bt.spider.socket.handler.UDPServerHandler;
-import com.lkd.bt.spider.util.Bencode;
 import lombok.SneakyThrows;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -39,31 +34,6 @@ public class BeanConfig {
 	@Bean
 	public ObjectMapper objectMapper(){
 		return new ObjectMapper();
-	}
-
-	/**
-	 * DHT服务端处理器
-	 */
-	@Bean
-	public List<UDPServerHandler> UdpServerHandlers(Bencode bencode, Config config,
-																		 UDPProcessorManager udpProcessorManager,
-																		 Sender sender){
-		int size = config.getMain().getNodeIds().size();
-		List<UDPServerHandler> udpServerHandlers = new ArrayList<>(size);
-		for (int i = 0; i < size; i++) {
-			udpServerHandlers.add(new UDPServerHandler(i, bencode, udpProcessorManager, sender));
-		}
-		return udpServerHandlers;
-	}
-
-	/**
-	 * UDP处理器管理器
-	 */
-	@Bean
-	public UDPProcessorManager udpProcessorManager(List<UDPProcessor> udpProcessors) {
-		UDPProcessorManager udpProcessorManager = new UDPProcessorManager();
-		udpProcessors.forEach(udpProcessorManager::register);
-		return udpProcessorManager;
 	}
 
 	/**
