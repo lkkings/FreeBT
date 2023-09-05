@@ -4,9 +4,9 @@ package com.lkd.bt.spider.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lkd.bt.spider.socket.RoutingTable;
 import com.lkd.bt.spider.socket.Sender;
-import com.lkd.bt.spider.socket.processer.UDPProcessor;
-import com.lkd.bt.spider.socket.processer.UDPProcessorManager;
-import com.lkd.bt.spider.task.FindNodeTask;
+import com.lkd.bt.spider.socket.core.UDPProcessor;
+import com.lkd.bt.spider.socket.core.UDPProcessorManager;
+import com.lkd.bt.spider.socket.handler.UDPServerHandler;
 import com.lkd.bt.spider.util.Bencode;
 import lombok.SneakyThrows;
 import org.redisson.Redisson;
@@ -45,13 +45,13 @@ public class BeanConfig {
 	 * DHT服务端处理器
 	 */
 	@Bean
-	public List<FindNodeTask.UDPServerHandler> UdpServerHandlers(Bencode bencode, Config config,
+	public List<UDPServerHandler> UdpServerHandlers(Bencode bencode, Config config,
 																		 UDPProcessorManager udpProcessorManager,
 																		 Sender sender){
 		int size = config.getMain().getNodeIds().size();
-		List<FindNodeTask.UDPServerHandler> udpServerHandlers = new ArrayList<>(size);
+		List<UDPServerHandler> udpServerHandlers = new ArrayList<>(size);
 		for (int i = 0; i < size; i++) {
-			udpServerHandlers.add(new FindNodeTask.UDPServerHandler(i, bencode, udpProcessorManager, sender));
+			udpServerHandlers.add(new UDPServerHandler(i, bencode, udpProcessorManager, sender));
 		}
 		return udpServerHandlers;
 	}

@@ -2,6 +2,8 @@ package com.lkd.bt.spider.socket.processer;
 
 import com.lkd.bt.spider.enums.QEnum;
 import com.lkd.bt.spider.enums.YEnum;
+import com.lkd.bt.spider.socket.core.Process;
+import com.lkd.bt.spider.socket.core.UDPProcessor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -14,13 +16,13 @@ public class AnnouncePeerResponseUDPProcessor extends UDPProcessor {
 	private static final String LOG = "[ANNOUNCE_PEER_RECEIVE]";
 
 	@Override
-	boolean process1(Process process) {
+	public boolean process1(Process process) {
 		log.info("{}TODO",LOG);
 		return true;
 	}
 
 	@Override
-	boolean isProcess(Process process) {
+	public boolean isProcess(Process process) {
 		return QEnum.ANNOUNCE_PEER.equals(process.getMessage().getMethod()) && YEnum.RECEIVE.equals(process.getMessage().getStatus());
 	}
 }

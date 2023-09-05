@@ -5,6 +5,8 @@ import com.lkd.bt.spider.enums.NodeRankEnum;
 import com.lkd.bt.spider.enums.QEnum;
 import com.lkd.bt.spider.enums.YEnum;
 import com.lkd.bt.spider.socket.RoutingTable;
+import com.lkd.bt.spider.socket.core.Process;
+import com.lkd.bt.spider.socket.core.UDPProcessor;
 import com.lkd.bt.spider.task.FindNodeTask;
 import com.lkd.bt.spider.util.BTUtil;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +34,7 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 	private final FindNodeTask findNodeTask;
 
 	@Override
-	boolean process1(Process process) {
+	public boolean process1(Process process) {
 		//回复主体
 		Map<String, Object> rMap = BTUtil.getParamMap(process.getRawMap(), "r", "FIND_NODE,找不到r参数.map:" + process.getRawMap());
 		List<Node> nodeList = BTUtil.getNodeListByRMap(rMap);
@@ -52,7 +54,7 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 	}
 
 	@Override
-	boolean isProcess(Process process) {
+	public boolean isProcess(Process process) {
 		return QEnum.FIND_NODE.equals(process.getMessage().getMethod()) && YEnum.RECEIVE.equals(process.getMessage().getStatus());
 	}
 

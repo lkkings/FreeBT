@@ -1,6 +1,8 @@
 package com.lkd.bt.spider.socket.processer;
 
 import com.lkd.bt.spider.enums.YEnum;
+import com.lkd.bt.spider.socket.core.Process;
+import com.lkd.bt.spider.socket.core.UDPProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -17,13 +19,13 @@ public class ErrorUDPProcessor extends UDPProcessor {
 	private static final String LOG = "[ERROR_PROCESS]";
 
 	@Override
-	boolean process1(Process process) {
+	public boolean process1(Process process) {
 		log.error("{}对方节点:{},回复异常信息:{}", LOG, process.getSender(), process.getRawMap());
 		return true;
 	}
 
 	@Override
-	boolean isProcess(Process process) {
+	public boolean isProcess(Process process) {
 		return YEnum.ERROR.equals(process.getMessage().getStatus());
 	}
 }

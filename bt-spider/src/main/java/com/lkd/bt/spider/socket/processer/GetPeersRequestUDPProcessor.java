@@ -7,7 +7,8 @@ import com.lkd.bt.spider.enums.QEnum;
 import com.lkd.bt.spider.enums.YEnum;
 import com.lkd.bt.spider.socket.RoutingTable;
 import com.lkd.bt.spider.socket.Sender;
-import com.lkd.bt.spider.task.FetchMetadataTask;
+import com.lkd.bt.spider.socket.core.Process;
+import com.lkd.bt.spider.socket.core.UDPProcessor;
 import com.lkd.bt.spider.task.GetPeersTask;
 import com.lkd.bt.spider.util.BTUtil;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +39,7 @@ public class GetPeersRequestUDPProcessor extends UDPProcessor {
 	private final GetPeersTask getPeersTask;
 
 	@Override
-	boolean process1(Process process) {
+	public boolean process1(Process process) {
 		Map<String, Object> rawMap = process.getRawMap();
 		InetSocketAddress sender = process.getSender();
 		int index = process.getIndex();
@@ -59,7 +60,7 @@ public class GetPeersRequestUDPProcessor extends UDPProcessor {
 	}
 
 	@Override
-	boolean isProcess(Process process) {
+	public boolean isProcess(Process process) {
 		return QEnum.GET_PEERS.equals(process.getMessage().getMethod()) && YEnum.QUERY.equals(process.getMessage().getStatus());
 	}
 }

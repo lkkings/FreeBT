@@ -10,6 +10,8 @@ import com.lkd.bt.spider.service.impl.InfoHashServiceImpl;
 import com.lkd.bt.spider.service.impl.NodeServiceImpl;
 import com.lkd.bt.spider.socket.RoutingTable;
 import com.lkd.bt.spider.socket.Sender;
+import com.lkd.bt.spider.socket.core.Process;
+import com.lkd.bt.spider.socket.core.UDPProcessor;
 import com.lkd.bt.spider.task.FetchMetadataTask;
 import com.lkd.bt.spider.task.FindNodeTask;
 import com.lkd.bt.spider.task.GetPeersTask;
@@ -47,7 +49,7 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor {
     private final FindNodeTask findNodeTask;
 
     @Override
-    boolean process1(Process process) {
+    public boolean process1(Process process) {
         AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(process.getRawMap(), process.getSender().getPort());
         log.info("{}收到消息.",LOG);
         //入库
@@ -69,7 +71,7 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor {
     }
 
     @Override
-    boolean isProcess(Process process) {
+    public boolean isProcess(Process process) {
         return QEnum.ANNOUNCE_PEER.equals(process.getMessage().getMethod()) && YEnum.QUERY.equals(process.getMessage().getStatus());
     }
 }

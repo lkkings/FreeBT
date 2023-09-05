@@ -1,4 +1,4 @@
-package com.lkd.bt.spider.socket.processer;
+package com.lkd.bt.spider.socket.core;
 
 import com.lkd.bt.common.exception.BTException;
 import com.lkd.bt.spider.config.Config;
@@ -16,8 +16,8 @@ import java.util.List;
 @Component
 public abstract class UDPProcessor {
 
-	protected static Config config;
-	protected static List<String> nodeIds;
+	public static Config config;
+	public static List<String> nodeIds;
 
 	@Autowired
 	public void init(Config config) {
@@ -51,12 +51,12 @@ public abstract class UDPProcessor {
 	/**
 	 * 处理请求 真正的处理方法
 	 */
-	abstract boolean process1(Process process);
+	public abstract boolean process1(Process process);
 
 	/**
 	 * 是否使用该处理器
 	 */
-	abstract boolean isProcess(Process process);
+	public abstract boolean isProcess(Process process);
 
 	/**
 	 * 设置下一个处理器

@@ -4,8 +4,6 @@ import com.lkd.bt.common.util.CodeUtil;
 import com.lkd.bt.spider.constant.RedisConstant;
 import com.lkd.bt.spider.dto.GetPeersSendInfo;
 import com.lkd.bt.spider.dto.Message;
-import com.lkd.bt.spider.dto.Peer;
-import com.lkd.bt.spider.entity.InfoHash;
 import com.lkd.bt.spider.entity.Node;
 import com.lkd.bt.spider.enums.NodeRankEnum;
 import com.lkd.bt.spider.enums.QEnum;
@@ -15,6 +13,8 @@ import com.lkd.bt.spider.service.impl.NodeServiceImpl;
 import com.lkd.bt.spider.service.impl.RedisServiceImpl;
 import com.lkd.bt.spider.socket.RoutingTable;
 import com.lkd.bt.spider.socket.Sender;
+import com.lkd.bt.spider.socket.core.Process;
+import com.lkd.bt.spider.socket.core.UDPProcessor;
 import com.lkd.bt.spider.task.FindNodeTask;
 import com.lkd.bt.spider.util.BTUtil;
 import io.netty.util.CharsetUtil;
@@ -26,7 +26,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -57,7 +56,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 
 
 	@Override
-	boolean process1(Process process) {
+	public boolean process1(Process process) {
 		Message message = process.getMessage();
 		Map<String, Object> rawMap = process.getRawMap();
 		InetSocketAddress sender = process.getSender();
@@ -158,7 +157,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 	}
 
 	@Override
-	boolean isProcess(Process process) {
+	public boolean isProcess(Process process) {
 		return QEnum.GET_PEERS.equals(process.getMessage().getMethod()) && YEnum.RECEIVE.equals(process.getMessage().getStatus());
 	}
 }
