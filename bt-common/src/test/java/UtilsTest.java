@@ -11,6 +11,7 @@ import org.junit.runner.RunWith;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Created by lkkings on 2023/8/24
@@ -51,5 +52,11 @@ public class UtilsTest{
         hyperLogLog.offer("element2");
         System.out.println(hyperLogLog.offer("element3"));
         System.out.println(hyperLogLog.offer("element1"));
+    }
+
+    @Test
+    public void deque() throws InterruptedException {
+        LinkedBlockingDeque<Object> objects = new LinkedBlockingDeque<>(10);
+        objects.take();
     }
 }

@@ -1,22 +1,15 @@
 package com.lkd.bt.spider;
 
-import com.lkd.bt.spider.socket.processer.UDPProcessor;
-import com.lkd.bt.spider.socket.processer.UDPProcessorManager;
-import com.lkd.bt.spider.task.InitTask;
 import com.lkd.bt.spider.util.Bencode;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @SpringBootTest
 class BtSpiderApplicationTests {
-	@Resource
-	InitTask initTask;
 
 	@Resource
 	Bencode bencode;
@@ -37,9 +30,5 @@ class BtSpiderApplicationTests {
 		System.out.println();
 	}
 
-	@Test
-	void initTaskTest(){
-		initTask.run();
-	}
 
 }
