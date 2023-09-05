@@ -53,11 +53,8 @@ public class FindNodeTask extends Task implements Pauseable {
 
     private final InfoHashFilter filter;
 
-    private final UDPProcessorManager udpProcessorManager;
-
     private final List<UDPServerHandler> udpServerHandlers;
 
-    private final Bencode bencode;
 
     /**
      * 发送队列
@@ -65,33 +62,21 @@ public class FindNodeTask extends Task implements Pauseable {
     private final BlockingDeque<InetSocketAddress> queue;
 
     public FindNodeTask(Config config, Sender sender,
-                        UDPServerFactory udpServerFactory, NodeServiceImpl nodeService, InfoHashFilter filter, UDPProcessorManager udpProcessorManager, Bencode bencode) {
+                        UDPServerFactory udpServerFactory,List<UDPServerHandler> udpServerHandlers, NodeServiceImpl nodeService, InfoHashFilter filter) {
         this.udpServerFactory = udpServerFactory;
         this.nodeService = nodeService;
         this.filter = filter;
-        this.udpProcessorManager = udpProcessorManager;
-        this.bencode = bencode;
         this.config = config;
         this.nodeIds = config.getMain().getNodeIds();
         this.sender = sender;
         this.queue = new LinkedBlockingDeque<>(config.getPerformance().getFindNodeTaskMaxQueueLength());
         this.lock = new ReentrantLock();
         this.condition = this.lock.newCondition();
-        this.udpServerHandlers = getInitUdpServerHandlers();
+        this.udpServerHandlers = udpServerHandlers;
         this.name = "FindNodeTask";
     }
 
-    /**
-     * DHT服务端处理器
-     */
-    private List<UDPServerHandler> getInitUdpServerHandlers(){
-        int size = config.getMain().getNodeIds().size();
-        List<UDPServerHandler> udpServerHandlers = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            udpServerHandlers.add(new UDPServerHandler(i, bencode, udpProcessorManager, sender));
-        }
-        return udpServerHandlers;
-    }
+
 
     /**
      * 入队首
@@ -220,7 +205,7 @@ public class FindNodeTask extends Task implements Pauseable {
         return queue.size();
     }
     @ChannelHandler.Sharable
-    private static class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
+    public static class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
         private static final String LOG = "[DHT服务端处理类]-";
 
         @Override
