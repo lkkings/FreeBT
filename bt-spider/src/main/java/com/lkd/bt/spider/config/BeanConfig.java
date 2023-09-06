@@ -2,15 +2,19 @@ package com.lkd.bt.spider.config;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lkd.bt.spider.constant.RedisConstant;
+import com.lkd.bt.spider.dto.GetPeersSendInfo;
 import com.lkd.bt.spider.socket.RoutingTable;
 import lombok.SneakyThrows;
 import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Constants;
 import org.springframework.core.io.ClassPathResource;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,4 +65,25 @@ public class BeanConfig {
 	    return Redisson.create(config);
 	}
 
+	@Bean(name = RedisConstant.GET_PEER_SEND_INFO)
+	public RMapCache<String, GetPeersSendInfo> rMapCache(RedissonClient redisson){
+		return redisson.getMapCache(RedisConstant.GET_PEER_SEND_INFO);
+	}
+
+	@Bean(name = RedisConstant.INFO_HASH_FILTER)
+	public RHyperLogLog<String> rHyperLogLog(RedissonClient redisson){
+		return redisson.getHyperLogLog(RedisConstant.INFO_HASH_FILTER);
+	}
+
+
+	@Bean(name = RedisConstant.FIND_NODE_TASK_QUEUE)
+	public RBlockingQueue <InetSocketAddress> findNodeTaskRQueue(RedissonClient redisson){
+		return redisson.getBlockingQueue(RedisConstant.FIND_NODE_TASK_QUEUE);
+	}
+
+
+	@Bean(name = RedisConstant.GET_PEERS_TASK_QUEUE)
+	public RBlockingQueue <String> getPeersTaskRQueue(RedissonClient redisson){
+		return redisson.getBlockingQueue(RedisConstant.GET_PEERS_TASK_QUEUE);
+	}
 }

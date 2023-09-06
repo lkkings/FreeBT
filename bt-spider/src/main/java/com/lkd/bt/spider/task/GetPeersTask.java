@@ -6,12 +6,16 @@ import com.lkd.bt.spider.constant.RedisConstant;
 import com.lkd.bt.spider.dto.GetPeersSendInfo;
 import com.lkd.bt.spider.entity.Node;
 import com.lkd.bt.spider.filter.InfoHashFilter;
-import com.lkd.bt.spider.service.impl.RedisServiceImpl;
 import com.lkd.bt.spider.socket.RoutingTable;
 import com.lkd.bt.spider.socket.Sender;
 import com.lkd.bt.spider.util.BTUtil;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RHyperLogLog;
+import org.redisson.api.RMapCache;
+import org.redisson.api.RQueue;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -44,19 +48,22 @@ public class GetPeersTask extends Task implements Pauseable {
 
 	private final InfoHashFilter filter;
 
-	private final RedisServiceImpl redisService;
+	private final RBlockingQueue<String> queue;
 
-	private final BlockingQueue<String> queue;
+	private final RHyperLogLog<String> rFilter;
 
-	public GetPeersTask(RedisServiceImpl redisService, List<RoutingTable> routingTables,
-						Config config, Sender sender, FetchMetadataTask fetchMetadataByPeerTask, InfoHashFilter filter) {
-		this.redisService = redisService;
+	private final RMapCache<String, GetPeersSendInfo> rMapCache;
+
+	public GetPeersTask(List<RoutingTable> routingTables,@Qualifier(RedisConstant.GET_PEERS_TASK_QUEUE) RBlockingQueue<String> queue,
+						Config config, Sender sender, FetchMetadataTask fetchMetadataByPeerTask, InfoHashFilter filter,@Qualifier(RedisConstant.INFO_HASH_FILTER) RHyperLogLog<String> rFilter, @Qualifier(RedisConstant.GET_PEER_SEND_INFO) RMapCache<String, GetPeersSendInfo> rMapCache) {
 		this.routingTables = routingTables;
 		this.config = config;
-		this.queue = new LinkedBlockingQueue<>(config.getPerformance().getGetPeersTaskInfoHashQueueLen());
+		this.queue = queue;
 		this.sender = sender;
 		this.fetchMetadataByPeerTask = fetchMetadataByPeerTask;
 		this.filter = filter;
+		this.rFilter = rFilter;
+		this.rMapCache = rMapCache;
 		this.lock = new ReentrantLock();
 		this.condition = this.lock.newCondition();
 		this.name = "GetPeersTask";
@@ -66,7 +73,7 @@ public class GetPeersTask extends Task implements Pauseable {
 	 * 入队并做双重过滤去重处理
 	 */
 	public void put(String infoHashHexStr) {
-		if (filter.put(infoHashHexStr) && redisService.add(RedisConstant.INFO_HASH,infoHashHexStr)) {
+		if (filter.put(infoHashHexStr) && rFilter.add(infoHashHexStr)) {
 			queue.offer(infoHashHexStr);
 		}
 	}
@@ -96,7 +103,7 @@ public class GetPeersTask extends Task implements Pauseable {
 			while (true) {
 				try {
 					//如果当前查找任务过多. 暂停30s再继续
-					if (redisService.size(RedisConstant.GET_PEER_SEND_INFO) > config.getPerformance().getGetPeersTaskConcurrentNum()) {
+					if (rMapCache.size() > config.getPerformance().getGetPeersTaskConcurrentNum()) {
 						log.info("{}当前任务数过多,暂停获取新任务线程{}s.", LOG, getPeersTaskPauseSecond);
 						pause(lock, condition, getPeersTaskPauseSecond, TimeUnit.SECONDS);
 						continue;
@@ -134,7 +141,7 @@ public class GetPeersTask extends Task implements Pauseable {
 			this.sender.getPeersBatch(addresses, config.getMain().getNodeIds().get(i), new String(CodeUtil.hexStr2Bytes(infoHashHexStr), CharsetUtil.ISO_8859_1), messageId, i);
 		}
 		//存入缓存
-		redisService.put(RedisConstant.GET_PEER_SEND_INFO,messageId, new GetPeersSendInfo(infoHashHexStr).put(nodeIdList));
+		rMapCache.put(messageId, new GetPeersSendInfo(infoHashHexStr).put(nodeIdList));
 		//存入任务队列
 		fetchMetadataByPeerTask.put(infoHashHexStr,getStartTime());
 	}

@@ -3,6 +3,7 @@ package com.lkd.bt.spider.task;
 import cn.hutool.core.util.ArrayUtil;
 import com.lkd.bt.common.exception.BTException;
 import com.lkd.bt.spider.config.Config;
+import com.lkd.bt.spider.constant.RedisConstant;
 import com.lkd.bt.spider.dto.Message;
 import com.lkd.bt.spider.entity.Node;
 import com.lkd.bt.spider.filter.InfoHashFilter;
@@ -20,16 +21,24 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBlockingDeque;
+import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RQueue;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.Order;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -43,7 +52,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class FindNodeTask extends Task implements Pauseable {
     private static final String LOG = "[FindNodeTask]";
     private final Config config;
-    private final List<String> nodeIds;
     private final ReentrantLock lock;
     private final Condition condition;
     private final Sender sender;
@@ -60,25 +68,22 @@ public class FindNodeTask extends Task implements Pauseable {
 
     private final List<UDPProcessor> udpProcessors;
 
+    private final RBlockingQueue<InetSocketAddress> queue;
 
-    /**
-     * 发送队列
-     */
-    private final BlockingDeque<InetSocketAddress> queue;
 
-    public FindNodeTask(Config config, Sender sender,
+
+    public FindNodeTask(Config config, Sender sender,@Qualifier(RedisConstant.FIND_NODE_TASK_QUEUE) RBlockingQueue<InetSocketAddress> queue,
                         UDPServerFactory udpServerFactory,NodeServiceImpl nodeService, InfoHashFilter filter, Bencode bencode, List<UDPProcessor> udpProcessors) {
         this.udpServerFactory = udpServerFactory;
         this.nodeService = nodeService;
         this.filter = filter;
         this.config = config;
-        this.nodeIds = config.getMain().getNodeIds();
         this.sender = sender;
-        this.queue = new LinkedBlockingDeque<>(config.getPerformance().getFindNodeTaskMaxQueueLength());
         this.bencode = bencode;
         this.udpProcessors = udpProcessors;
         this.lock = new ReentrantLock();
         this.condition = this.lock.newCondition();
+        this.queue = queue;
         this.udpServerHandlers = udpServerHandlers();
         this.name = "FindNodeTask";
     }
@@ -92,23 +97,9 @@ public class FindNodeTask extends Task implements Pauseable {
         UDPProcessorManager udpProcessorManager = new UDPProcessorManager();
         udpProcessors.forEach(udpProcessorManager::register);
         for (int i = 0; i < size; i++) {
-            udpServerHandlers.add(new UDPServerHandler(i, bencode, udpProcessorManager, sender));
+            udpServerHandlers.add(new UDPServerHandler(i, udpProcessorManager));
         }
         return udpServerHandlers;
-    }
-
-
-
-    /**
-     * 入队首
-     */
-    public void put(InetSocketAddress address) {
-        // 如果插入失败
-        if(!queue.offerFirst(address)){
-            //从末尾移除一个
-            log.info(LOG+"-队列已满");
-            queue.pollLast();
-        }
     }
 
 
@@ -126,18 +117,21 @@ public class FindNodeTask extends Task implements Pauseable {
     }
 
     /**
-     * 初始化发送任务
-     * 向yml中的节点发送请求
+     * 当节点队列为空时，重新加入DHT网络
      */
+    @SneakyThrows
+    @Scheduled(fixedRate = 10,initialDelay = 5,timeUnit=TimeUnit.SECONDS)
     private void joinDHT() {
-        //获取初始化发送地址
-        InetSocketAddress[] initAddresses = getInitAddresses();
-        List<String> nodeIds = config.getMain().getNodeIds();
-        for (int i = 0; i < nodeIds.size(); i++) {
-            String nodeId = nodeIds.get(i);
-            //向每个地址发送请求
-            for (InetSocketAddress address : initAddresses) {
-                this.sender.findNode(address,nodeId, BTUtil.generateNodeIdString(),i);
+        if (queue.isEmpty()) {
+            //获取初始化发送地址
+            InetSocketAddress[] initAddresses = getInitAddresses();
+            List<String> nodeIds = config.getMain().getNodeIds();
+            for (int i = 0; i < nodeIds.size(); i++) {
+                String nodeId = nodeIds.get(i);
+                //向每个地址发送请求
+                for (InetSocketAddress address : initAddresses) {
+                    this.sender.findNode(address,nodeId, BTUtil.generateNodeIdString(),i);
+                }
             }
         }
     }
@@ -151,10 +145,6 @@ public class FindNodeTask extends Task implements Pauseable {
         filter.enable();
         //启动DHT服务
         runDHTServer();
-        //等待连接成功,获取到发送用的channel,再进行下一步
-        Thread.sleep(5000);
-        //加入DHT网络
-        joinDHT();
         //发送find_node请求
         startSendFindNode();
     }
@@ -168,6 +158,7 @@ public class FindNodeTask extends Task implements Pauseable {
 
     private void startSendFindNode(){
         int pauseTime = config.getPerformance().getFindNodeTaskIntervalMS();
+        List<String> nodeIds = config.getMain().getNodeIds();
         int size = nodeIds.size();
         TimeUnit milliseconds = TimeUnit.MILLISECONDS;
         //开启多个线程，每个线程负责
@@ -184,11 +175,6 @@ public class FindNodeTask extends Task implements Pauseable {
                     }
                     catch (Exception e) {
                         log.error("[FindNodeTask]异常.error:{}",e.getMessage());
-                        if (queue.isEmpty()){
-                            log.info("{}节点队列为空,准备重新加入DHT网络",LOG);
-                            pause(lock, condition,3,TimeUnit.SECONDS);
-                            joinDHT();
-                        }
                     }
                 }
             }).start();
@@ -227,23 +213,18 @@ public class FindNodeTask extends Task implements Pauseable {
     }
 
     @ChannelHandler.Sharable
-    static class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
+    class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
         private static final String LOG = "[DHT服务端处理类]-";
 
         //当前处理器针对的nodeId索引
         private final int index;
 
-        private final Bencode bencode;
         private final UDPProcessorManager udpProcessorManager;
-        private final Sender sender;
 
 
-        public UDPServerHandler(int index, Bencode bencode, UDPProcessorManager udpProcessorManager,
-                                Sender sender) {
+        public UDPServerHandler(int index, UDPProcessorManager udpProcessorManager) {
             this.index = index;
-            this.bencode = bencode;
             this.udpProcessorManager = udpProcessorManager;
-            this.sender = sender;
         }
 
         @Override
@@ -279,7 +260,7 @@ public class FindNodeTask extends Task implements Pauseable {
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             //给发送器工具类的channel赋值
-            this.sender.setChannel(ctx.channel(), this.index);
+            sender.setChannel(ctx.channel(), this.index);
         }
 
         @Override

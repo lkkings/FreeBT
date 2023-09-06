@@ -10,7 +10,6 @@ import com.lkd.bt.spider.enums.QEnum;
 import com.lkd.bt.spider.enums.YEnum;
 import com.lkd.bt.spider.service.impl.InfoHashServiceImpl;
 import com.lkd.bt.spider.service.impl.NodeServiceImpl;
-import com.lkd.bt.spider.service.impl.RedisServiceImpl;
 import com.lkd.bt.spider.socket.RoutingTable;
 import com.lkd.bt.spider.socket.Sender;
 import com.lkd.bt.spider.socket.core.Process;
