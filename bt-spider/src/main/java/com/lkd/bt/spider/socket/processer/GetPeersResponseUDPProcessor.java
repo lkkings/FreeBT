@@ -19,6 +19,9 @@ import com.lkd.bt.spider.util.BTUtil;
 import io.netty.util.CharsetUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RMapCache;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -47,7 +50,9 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 
 	private final Sender sender;
 
-	private final RedisServiceImpl redisService;
+	private final RMapCache<String, GetPeersSendInfo> rMapCache;
+
+	private final RBlockingQueue<InetSocketAddress> findNodeQueue;
 
 	private final InfoHashServiceImpl infoHashService;
 
@@ -63,7 +68,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		RoutingTable routingTable = routingTables.get(index);
 
 		//查询缓存
-		GetPeersSendInfo getPeersSendInfo = (GetPeersSendInfo) redisService.get(RedisConstant.GET_PEER_SEND_INFO,message.getMessageId());
+		GetPeersSendInfo getPeersSendInfo = rMapCache.get(message.getMessageId());
 		//查询rMap,此处rMap不可能不存在
 		Map<String, Object> rMap = BTUtil.getParamMap(rawMap, "r", "");
 		//缓存过期，则不做任何处理了
@@ -99,8 +104,8 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		//将peers连接为字符串
 		String address = BTUtil.getPeerAddress(rawPeerList);
 		log.info("{}发送者:{},info_hash:{},消息id:{},返回peers:{}", LOG, sender, getPeersSendInfo.getInfoHash(), message.getMessageId(),address);
-		//清除该任务缓存 和 连接peer任务
-		redisService.remove(RedisConstant.GET_PEER_SEND_INFO,message.getMessageId());
+		//清除该任务缓存
+		rMap.remove(message.getMessageId());
 		//入库
 		infoHashService.saveInfoHash(getPeersSendInfo.getInfoHash(),address);
 
@@ -108,7 +113,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		nodeService.save(new Node(null, BTUtil.getIpBySender(sender), sender.getPort()));
 		routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode()));
 		//并向该节点发送findNode请求
-		findNodeTask.put(sender);
+		findNodeQueue.offer(sender);
 		return true;
 	}
 
