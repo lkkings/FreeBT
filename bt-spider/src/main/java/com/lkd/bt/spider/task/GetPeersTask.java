@@ -9,12 +9,10 @@ import com.lkd.bt.spider.filter.InfoHashFilter;
 import com.lkd.bt.spider.socket.RoutingTable;
 import com.lkd.bt.spider.socket.Sender;
 import com.lkd.bt.spider.util.BTUtil;
-import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RHyperLogLog;
 import org.redisson.api.RMapCache;
-import org.redisson.api.RQueue;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -22,8 +20,6 @@ import org.springframework.stereotype.Component;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -138,7 +134,7 @@ public class GetPeersTask extends Task implements Pauseable {
 			//目标地址
 			List<InetSocketAddress> addresses = nodeList.stream().map(Node::toAddress).collect(Collectors.toList());
 			//批量发送
-			this.sender.getPeersBatch(addresses, config.getMain().getNodeIds().get(i), new String(CodeUtil.hexStr2Bytes(infoHashHexStr), CharsetUtil.ISO_8859_1), messageId, i);
+			this.sender.getPeersBatch(addresses, config.getMain().getNodeIds().get(i), new String(CodeUtil.hexStr2Bytes(infoHashHexStr)), messageId, i);
 		}
 		//存入缓存
 		rMapCache.put(messageId, new GetPeersSendInfo(infoHashHexStr).put(nodeIdList));

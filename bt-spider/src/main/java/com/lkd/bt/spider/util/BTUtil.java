@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -71,6 +72,16 @@ public class BTUtil {
      */
     public static String generateMessageID() {
         return generateMessageID(messageIDGenerator);
+    }
+    public static byte[] generateNeighborNodeId(String nodeId) {
+        SecureRandom random = new SecureRandom();
+        byte[] preNodeIdBytes = ArrayUtil.sub(CodeUtil.hexStr2Bytes(nodeId),0,16);
+        byte[] sufNodeIdBytes = ArrayUtil.sub(generateNodeId(),16,20);
+        return ArrayUtil.addAll(preNodeIdBytes,sufNodeIdBytes);
+    }
+
+    public static String generateNeighborNodeIdString(String nodeId) {
+        return new String(generateNeighborNodeId(nodeId));
     }
 
     /**

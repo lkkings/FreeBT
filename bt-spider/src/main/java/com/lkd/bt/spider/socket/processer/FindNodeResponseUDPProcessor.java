@@ -7,14 +7,15 @@ import com.lkd.bt.spider.enums.YEnum;
 import com.lkd.bt.spider.socket.RoutingTable;
 import com.lkd.bt.spider.socket.core.Process;
 import com.lkd.bt.spider.socket.core.UDPProcessor;
-import com.lkd.bt.spider.task.FindNodeTask;
 import com.lkd.bt.spider.util.BTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBlockingQueue;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 
 	private final List<RoutingTable> routingTables;
 
-	private final FindNodeTask findNodeTask;
+	private final RBlockingQueue<Node> findNodeQueue;
 
 	@Override
 	public boolean process1(Process process) {
@@ -45,7 +46,7 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 		log.info("{}.发送者:{},返回的nodes:{}", LOG, process.getSender(),nodes);
 		//将nodes加入发送队列
 		for (Node node : nodes) {
-			findNodeTask.put(node.toAddress());
+			findNodeQueue.offer(node);
 		}
 		byte[] id = BTUtil.getParamString(rMap, "id", "FIND_NODE,找不到id参数.map:" + process.getRawMap()).getBytes();
 		//将发送消息的节点加入路由表

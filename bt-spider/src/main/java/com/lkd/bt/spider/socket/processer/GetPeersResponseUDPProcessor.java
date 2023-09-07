@@ -16,12 +16,10 @@ import com.lkd.bt.spider.socket.core.Process;
 import com.lkd.bt.spider.socket.core.UDPProcessor;
 import com.lkd.bt.spider.task.FindNodeTask;
 import com.lkd.bt.spider.util.BTUtil;
-import io.netty.util.CharsetUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RMapCache;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -74,7 +72,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		//缓存过期，则不做任何处理了
 		if (getPeersSendInfo == null) return true;
 
-		byte[] id = BTUtil.getParamString(rMap, "id", "GET_PEERS-RECEIVE,找不到id参数.map:" + rMap).getBytes(CharsetUtil.ISO_8859_1);
+		byte[] id = BTUtil.getParamString(rMap, "id", "GET_PEERS-RECEIVE,找不到id参数.map:" + rMap).getBytes();
 		//如果返回的是nodes
 		if (rMap.get("nodes") != null) {
 			return nodesHandler(message, sender, index, routingTable, getPeersSendInfo, rMap, id);
@@ -155,7 +153,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		List<InetSocketAddress> unSentAddressList = unSentNodeList.stream().map(Node::toAddress).collect(Collectors.toList());
 		//批量发送请求
 		this.sender.getPeersBatch(unSentAddressList, nodeIds.get(index),
-				new String(CodeUtil.hexStr2Bytes(getPeersSendInfo.getInfoHash()), CharsetUtil.ISO_8859_1),
+				new String(CodeUtil.hexStr2Bytes(getPeersSendInfo.getInfoHash())),
 				message.getMessageId(), index);
 		return true;
 	}

@@ -18,7 +18,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.netty.util.CharsetUtil;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
@@ -200,7 +199,7 @@ public class FetchMetadataTask extends Task{
 	@SuppressWarnings("unchecked")
 	public Metadata bytes2Metadata(byte[] bytes, String infoHashHexStr) {
 		try {
-			String metadataStr = new String(bytes, CharsetUtil.UTF_8);
+			String metadataStr = new String(bytes);
 			String metadataBencodeStr = metadataStr.substring(0, metadataStr.indexOf("6:pieces")) + "e";
 			Map<String, Object> rawMap = bencode.decode(metadataBencodeStr.getBytes(), Map.class);
 			//名称
@@ -262,7 +261,7 @@ public class FetchMetadataTask extends Task{
 			byte[] bytes = new byte[msg.readableBytes()];
 			msg.readBytes(bytes);
 
-			String messageStr = new String(bytes, CharsetUtil.ISO_8859_1);
+			String messageStr = new String(bytes);
 
 			//收到握手消息回复
 			if (bytes[0] == (byte) 19) {
@@ -328,7 +327,7 @@ public class FetchMetadataTask extends Task{
 				System.arraycopy(lenBytes, 0, metadataRequestBytes, 0, 4);
 				System.arraycopy(metadataRequestMapBytes, 0, metadataRequestBytes, 6, metadataRequestMapBytes.length);
 				ctx.channel().writeAndFlush(Unpooled.copiedBuffer(metadataRequestBytes));
-				log.info("{}发送metadata请求消息:{}", infoHashHexStr, new String(metadataRequestBytes, CharsetUtil.ISO_8859_1));
+				log.info("{}发送metadata请求消息:{}", infoHashHexStr, new String(metadataRequestBytes));
 			}
 		}
 
@@ -349,7 +348,7 @@ public class FetchMetadataTask extends Task{
 			byte[] lenBytes = CodeUtil.int2Bytes(tempExtendBytes.length + 2);
 			System.arraycopy(lenBytes, 0, extendMessageBytes, 0, 4);
 			System.arraycopy(tempExtendBytes, 0, extendMessageBytes, 6, tempExtendBytes.length);
-			log.info("{}发送扩展消息:{}", infoHashHexStr, new String(extendMessageBytes, CharsetUtil.ISO_8859_1));
+			log.info("{}发送扩展消息:{}", infoHashHexStr, new String(extendMessageBytes));
 			ctx.channel().writeAndFlush(Unpooled.copiedBuffer(extendMessageBytes));
 		}
 

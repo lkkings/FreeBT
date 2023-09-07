@@ -18,9 +18,11 @@ import com.lkd.bt.spider.task.GetPeersTask;
 import com.lkd.bt.spider.util.BTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBlockingQueue;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
@@ -44,9 +46,7 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor {
 
     private final InfoHashServiceImpl infoHashService;
 
-    private final FetchMetadataTask fetchMetadataTask;
-
-    private final FindNodeTask findNodeTask;
+    private final RBlockingQueue<InetSocketAddress> findNodeQueue;
 
     @Override
     public boolean process1(Process process) {
@@ -66,7 +66,7 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor {
         //加入任务队列
         getPeersTask.put(requestContent.getInfo_hash());
         //加入findNode任务队列
-        findNodeTask.put(process.getSender());
+        findNodeQueue.offer(process.getSender());
         return true;
     }
 

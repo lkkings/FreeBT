@@ -17,8 +17,7 @@ public class UtilsTest{
     @ExtendedTest
     @Test
     public void generateNodeId() {
-        String bytes = BTUtil.generateMessageID();
-        System.out.println();
+
     }
 
 

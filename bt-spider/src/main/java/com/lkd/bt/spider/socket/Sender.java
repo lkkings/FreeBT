@@ -9,10 +9,12 @@ import com.lkd.bt.spider.dto.bt.GetPeers;
 import com.lkd.bt.spider.dto.bt.Ping;
 import com.lkd.bt.spider.entity.Node;
 import com.lkd.bt.spider.task.Pauseable;
+import com.lkd.bt.spider.util.BTUtil;
 import com.lkd.bt.spider.util.Bencode;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.socket.DatagramPacket;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class Sender implements Pauseable {
 
     private List<Channel> channels;
@@ -40,6 +43,8 @@ public class Sender implements Pauseable {
     //get_peers请求发送锁
     private  final ReentrantLock getPeersLock = new ReentrantLock();
     private Condition getPeersCondition;
+
+    private Config config;
     private  int getPeersPauseMS;
     /**
      * 使用channel发送消息
@@ -72,13 +77,24 @@ public class Sender implements Pauseable {
     }
 
     /**
-     * 发送find_node请求
+     * 发送find_node请求(传入nodeId时,发送与nodeId逻辑距离较近的节点)
      */
     @SneakyThrows
     public  void findNode(InetSocketAddress address, String nodeId,String targetNodeId,int index) {
-        FindNode.Request request = new FindNode.Request(nodeId, targetNodeId);
+        FindNode.Request request = new FindNode.Request(BTUtil.generateNeighborNodeIdString(nodeId), targetNodeId);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(request)), address,index);
     }
+
+    /**
+     * 发送find_node请求(不传入nodeId时,发送索引绑定的nodeId)
+     */
+    @SneakyThrows
+    public  void findNode(InetSocketAddress address,String targetNodeId,int index) {
+        List<String> nodeIds = config.getMain().getNodeIds();
+        FindNode.Request request = new FindNode.Request(nodeIds.get(index), targetNodeId);
+        writeAndFlush(bencode.encode(BeanUtil.beanToMap(request)), address,index);
+    }
+
 
 
 

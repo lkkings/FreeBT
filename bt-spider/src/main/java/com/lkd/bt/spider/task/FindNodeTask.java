@@ -68,11 +68,11 @@ public class FindNodeTask extends Task implements Pauseable {
 
     private final List<UDPProcessor> udpProcessors;
 
-    private final RBlockingQueue<InetSocketAddress> queue;
+    private final RBlockingQueue<Node> queue;
 
 
 
-    public FindNodeTask(Config config, Sender sender,@Qualifier(RedisConstant.FIND_NODE_TASK_QUEUE) RBlockingQueue<InetSocketAddress> queue,
+    public FindNodeTask(Config config, Sender sender,@Qualifier(RedisConstant.FIND_NODE_TASK_QUEUE) RBlockingQueue<Node> queue,
                         UDPServerFactory udpServerFactory,NodeServiceImpl nodeService, InfoHashFilter filter, Bencode bencode, List<UDPProcessor> udpProcessors) {
         this.udpServerFactory = udpServerFactory;
         this.nodeService = nodeService;
@@ -127,10 +127,9 @@ public class FindNodeTask extends Task implements Pauseable {
             InetSocketAddress[] initAddresses = getInitAddresses();
             List<String> nodeIds = config.getMain().getNodeIds();
             for (int i = 0; i < nodeIds.size(); i++) {
-                String nodeId = nodeIds.get(i);
                 //向每个地址发送请求
                 for (InetSocketAddress address : initAddresses) {
-                    this.sender.findNode(address,nodeId, BTUtil.generateNodeIdString(),i);
+                    this.sender.findNode(address,BTUtil.generateNodeIdString(),i);
                 }
             }
         }
@@ -159,17 +158,18 @@ public class FindNodeTask extends Task implements Pauseable {
     private void startSendFindNode(){
         int pauseTime = config.getPerformance().getFindNodeTaskIntervalMS();
         List<String> nodeIds = config.getMain().getNodeIds();
-        int size = nodeIds.size();
         TimeUnit milliseconds = TimeUnit.MILLISECONDS;
-        //开启多个线程，每个线程负责
+        //开启多个线程，每个线程负责轮询使用每个端口向外发送请求
         for (int i = 0; i < config.getPerformance().getFindNodeTaskThreadNum(); i++) {
             new Thread(()->{
                 int j;
                 while (true) {
                     try {
                         //轮询使用每个端口向外发送请求
-                        for (j = 0; j < size; j++) {
-                            sender.findNode(queue.take(),nodeIds.get(j), BTUtil.generateNodeIdString(),j);
+                        for (j = 0; j <  nodeIds.size(); j++) {
+                            Node node = queue.take();
+                            log.info("{}发现节点{}",LOG,node);
+                            sender.findNode(node.toAddress(), node.getNodeId(), BTUtil.generateNodeIdString(),j);
                             pause(lock, condition, pauseTime, milliseconds);
                         }
                     }
@@ -194,12 +194,12 @@ public class FindNodeTask extends Task implements Pauseable {
                         .channel()
                         .closeFuture()
                         .await();
-                log.info("{}DHT服务关闭",LOG);
             } catch (Exception e) {
                 log.error("{},端口:{},发生未知异常,准备重新启动.异常:{}", LOG, port, e.getMessage(), e);
             }
             finally {
                 udpServerFactory.destroy();
+                log.info("{}DHT服务关闭",LOG);
             }
         }
     }
@@ -253,6 +253,7 @@ public class FindNodeTask extends Task implements Pauseable {
                 log.info("{}解析MessageInfo异常.异常:{}", LOG, e.getMessage(), e);
                 return;
             }
+            log.info("{}请求方法{}",LOG,message.getMethod().getMessage());
             udpProcessorManager.process(new Process(message, map, sender, this.index));
         }
 

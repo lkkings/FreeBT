@@ -4,6 +4,7 @@ package com.lkd.bt.spider.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lkd.bt.spider.constant.RedisConstant;
 import com.lkd.bt.spider.dto.GetPeersSendInfo;
+import com.lkd.bt.spider.entity.Node;
 import com.lkd.bt.spider.socket.RoutingTable;
 import lombok.SneakyThrows;
 import org.redisson.Redisson;
@@ -77,7 +78,7 @@ public class BeanConfig {
 
 
 	@Bean(name = RedisConstant.FIND_NODE_TASK_QUEUE)
-	public RBlockingQueue <InetSocketAddress> findNodeTaskRQueue(RedissonClient redisson){
+	public RBlockingQueue <Node> findNodeTaskRQueue(RedissonClient redisson){
 		return redisson.getBlockingQueue(RedisConstant.FIND_NODE_TASK_QUEUE);
 	}
 

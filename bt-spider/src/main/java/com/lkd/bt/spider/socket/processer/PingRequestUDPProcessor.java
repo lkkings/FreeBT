@@ -26,8 +26,8 @@ public class PingRequestUDPProcessor  extends UDPProcessor {
 
 	@Override
 	public boolean process1(Process process) {
-		this.sender.pingReceive(process.getSender(), nodeIds.get(process.getIndex()),
-				process.getMessage().getMessageId(),process.getIndex());
+//		this.sender.pingReceive(process.getSender(), nodeIds.get(process.getIndex()),
+//				process.getMessage().getMessageId(),process.getIndex());
 		return true;
 	}
 
