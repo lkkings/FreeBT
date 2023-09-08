@@ -37,28 +37,20 @@ bt:
     port: 9300
   performance:
     # find_node任务,线程数
-    find-node-task-thread-num: 30
+    find-node-task-thread-num: 3
     # find_node任务, 发送间隔. 毫秒
-    find-node-task-interval-ms: 0
-    # find_node任务,最大队列长度
-    findNodeTaskMaxQueueLength: 4096
+    find-node-task-interval-ms: 10
     # UDP服务器主任务线程数,单个端口的数量
     udp-server-main-thread-num: 3
 
     # fetchMetadataByPeerTask,最大线程数
     fetch-metadata-by-peer-task-tread-num: 3
+
     # fetchMetadataByPeerTask,连接成功后等待peer超时时间
     fetch-metadata-by-peer-task-read-timeout-second: 10
 
-    # fetchMetadataByOtherWebTask,等待尝试获取队列最大长度
-    fetch-metadata-by-other-web-task-queue-num: 102400
-    # fetchMetadataByOtherWebTask,最大线程数
-    fetch-metadata-by-other-web-task-thread-num: 100
-
     # get_peers任务,最多同时进行的任务数
     get-peers-task-concurrent-num: 50
-    # get_peers任务, info_hash等待队列长度
-    get-peers-task-info-hash-queue-len: 512
     # get_peers任务过期时间
     get-peers-task-expire-second: 200
     # get_peers请求, 最小发送间隔
@@ -80,58 +72,16 @@ bt:
     # 路由表分段锁 数量
     routing-table-lock-num: 10
   main:
-    # ???????
-    start: false
-    # ??????
     configVersion: 1.0
-    # ??IP??
-    ip: 52.175.146.127
-    # ??????
+    ip: 20.55.80.86
     ports:
       - 44444
       - 44445
-      - 44446
-      - 44447
-      - 44448
-      - 44449
-      - 44450
-      - 44451
-      - 44452
-      - 44453
-      - 44454
-      - 44455
-      - 44456
-      - 44457
-      - 44458
-      - 44459
-      - 44460
-      - 44461
-      - 44462
-      - 44463
-      - 44464
-      - 44465
-      - 44466
-      - 44467
-      - 44468
-      - 44469
-      - 44470
-      - 44471
-      - 44472
-      - 44473
-      - 44474
     init-addresses:
       - router.utorrent.com:6881
       - router.bittorrent.com:6881
       - router.bitcomet.com:6881
       - dht.transmissionbt.com:6881
-       # ???????????,??announce_peer??topN??
-      - 86.43.163.97:52682
-      - 89.204.94.58:6001
-      - 188.73.154.181:51413
-      - 1.180.116.51:56242
-      - 70.49.220.3:58660
-      - 182.216.195.94:42854
-      - 46.29.232.4:38172
-      - 65.34.83.142:23784
+
 
 
