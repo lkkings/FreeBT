@@ -2,6 +2,7 @@ package com.lkd.bt.spider.task;
 
 import cn.hutool.core.util.ArrayUtil;
 import com.lkd.bt.common.exception.BTException;
+import com.lkd.bt.common.util.NetUtil;
 import com.lkd.bt.spider.config.Config;
 import com.lkd.bt.spider.constant.RedisConstant;
 import com.lkd.bt.spider.dto.Message;
@@ -41,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 /**
  * Created by lkkings on 2023/8/26
@@ -111,9 +113,9 @@ public class FindNodeTask extends Task implements Pauseable {
         Integer initTaskSendNum = config.getMain().getInitTaskSendNum();
         //获取配置文件中的初始化地址
         InetSocketAddress[] initAddressArray = config.getMain().getInitAddressArray();
-        List<Node> nodeList = nodeService.getBaseMapper().findTopNode(initTaskSendNum);
-        initAddressArray = ArrayUtil.addAll(initAddressArray, nodeList.stream().map(Node::toAddress).toArray(InetSocketAddress[]::new));
-        return initAddressArray;
+        List<String> addressList = nodeService.getBaseMapper().findTopNode(initTaskSendNum);
+        InetSocketAddress[] addressArray = addressList.stream().map(NetUtil::toSocketAddress).toArray(InetSocketAddress[]::new);
+        return ArrayUtil.addAll(initAddressArray,addressArray);
     }
 
     /**

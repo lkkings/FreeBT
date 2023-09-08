@@ -9,6 +9,8 @@ import com.lkd.bt.spider.service.IInfoHashService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 /**
  * <p>
  * info_hash 服务实现类
@@ -23,9 +25,13 @@ public class InfoHashServiceImpl extends ServiceImpl<InfoHashMapper, InfoHash> i
     @Override
     public void saveInfoHash(String infoHashHexStr,String peersStr) {
         InfoHash infoHash = this.getOne(new LambdaQueryWrapper<InfoHash>().eq(InfoHash::getInfoHash,infoHashHexStr));
+        StringBuilder address = new StringBuilder();
+        if (Objects.nonNull(infoHash)){
+            address.append(infoHash.getPeerAddress());
+        }
         infoHash = InfoHash.builder()
                 .infoHash(infoHashHexStr)
-                .peerAddress(infoHash.getPeerAddress().concat(peersStr))
+                .peerAddress(address.append(peersStr).toString())
                 .build();
         this.saveOrUpdate(infoHash);
     }

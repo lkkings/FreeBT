@@ -1,6 +1,7 @@
 package com.lkd.bt.spider.socket;
 
 import com.lkd.bt.common.util.CodeUtil;
+import com.lkd.bt.common.util.NetUtil;
 import com.lkd.bt.spider.config.Config;
 import com.lkd.bt.spider.entity.Node;
 import lombok.AllArgsConstructor;
@@ -164,7 +165,7 @@ public class RoutingTable {
         root.getNext()[0] = new TrieNode(0);
         root.getNext()[1] = new TrieNode(0);
         //存入主节点(自己的nodeId)
-        put(new Node(this.nodeId, config.getMain().getIp(), port, Integer.MAX_VALUE));
+        put(new Node(this.nodeId, NetUtil.toAddress(config.getMain().getIp(),port),Integer.MAX_VALUE));
     }
 
 

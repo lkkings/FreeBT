@@ -1,6 +1,7 @@
 package com.lkd.bt.spider.socket.processer;
 
 import com.lkd.bt.common.util.CodeUtil;
+import com.lkd.bt.common.util.NetUtil;
 import com.lkd.bt.spider.constant.RedisConstant;
 import com.lkd.bt.spider.dto.GetPeersSendInfo;
 import com.lkd.bt.spider.dto.Message;
@@ -107,7 +108,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		infoHashService.saveInfoHash(getPeersSendInfo.getInfoHash(),address);
 
 		//节点入库
-		nodeService.save(new Node(null, BTUtil.getIpBySender(sender), sender.getPort()));
+		nodeService.save(new Node(null, NetUtil.toAddress(BTUtil.getIpBySender(sender),sender.getPort())));
 		Node node = new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode());
 		routingTable.put(node);
 		//并向该节点发送findNode请求

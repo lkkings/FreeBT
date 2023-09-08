@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.lkd.bt.spider.mapper.NodeMapper">
-<select id="findTopNode" resultType="com.lkd.bt.spider.entity.Node">
-    SELECT n.*, node_id_count
-    FROM node n
-             JOIN (
-        SELECT node_id, COUNT(*) AS node_id_count
-        FROM node
-        GROUP BY node_id
-        ORDER BY node_id_count DESC
-            LIMIT #{top}
-    ) t ON n.node_id = t.node_id;
+<select id="findTopNode" resultType="java.lang.String">
+    SELECT address,count(1) as count
+    FROM node
+    GROUP BY address
+    ORDER BY count
+    DESC LIMIT #{top}
 </select>
 </mapper>

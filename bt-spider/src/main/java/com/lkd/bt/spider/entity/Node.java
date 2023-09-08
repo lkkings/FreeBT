@@ -4,6 +4,7 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.lkd.bt.common.exception.BTException;
 import com.lkd.bt.common.util.CodeUtil;
+import com.lkd.bt.common.util.NetUtil;
 import com.lkd.bt.spider.config.Config;
 import com.lkd.bt.spider.util.BTUtil;
 import lombok.AllArgsConstructor;
@@ -35,9 +36,7 @@ public class Node implements Serializable {
     private String nodeId  = "";
 
 
-    private String ip;
-
-    private Integer port;
+    private String address;
 
     /**
      * 创建时间
@@ -80,18 +79,21 @@ public class Node implements Serializable {
     /**
      * 检查该节点信息是否完整
      */
-    public void check() {
+    public InetSocketAddress hostCheck() {
+        String[] ipPort = address.split(":");
         //此处对小于1024的私有端口.不作为错误.
         if(nodeIdBytes == null || nodeIdBytes.length != 20 ||
-                StrUtil.isBlank(ip) || port == null ||  port > 65535)
+                StrUtil.isBlank(ipPort[0]) || Integer.parseInt(ipPort[1]) > 65535)
             throw new BTException("该节点信息有误:" + this);
+        return toAddress();
     }
 
     /**
      * Node 转 InetSocketAddress
      */
     public InetSocketAddress toAddress() {
-        return new InetSocketAddress(this.ip, this.port);
+        String[] ipPort = address.split(":");
+        return new InetSocketAddress(ipPort[0], Integer.parseInt(ipPort[1]));
     }
 
     /**
@@ -111,12 +113,12 @@ public class Node implements Serializable {
      * Node 转 byte[]
      */
     public byte[] toBytes() {
-        check();
+        //ip
+        InetSocketAddress host = hostCheck();
         //nodeIds
         byte[] nodeBytes = new byte[Config.NODE_BYTES_LEN];
         System.arraycopy(nodeIdBytes, 0, nodeBytes, 0, 20);
-        //ip
-        String[] ips = ip.split("\\.");
+        String[] ips = host.getHostString().split("\\.");
         if(ips.length != 4)
             throw new BTException("该节点IP有误,节点信息:" + this);
         byte[] ipBytes = new byte[4];
@@ -126,7 +128,7 @@ public class Node implements Serializable {
         System.arraycopy(ipBytes, 0, nodeBytes, 20, 4);
 
         //ports
-        byte[] portBytes = CodeUtil.int2TwoBytes(port);
+        byte[] portBytes = CodeUtil.int2TwoBytes(host.getPort());
         System.arraycopy(portBytes, 0, nodeBytes, 24, 2);
 
         return nodeBytes;
@@ -139,31 +141,29 @@ public class Node implements Serializable {
         if (bytes.length != Config.NODE_BYTES_LEN)
             throw new BTException("转换为Node需要bytes长度为"+Config.NODE_BYTES_LEN+",当前为:" + bytes.length);
         nodeIdBytes = ArrayUtil.sub(bytes, 0, 20);
-        ip = CodeUtil.bytes2Ip(ArrayUtil.sub(bytes, 20, 24));
-        port = CodeUtil.bytes2Port(ArrayUtil.sub(bytes, 24, Config.NODE_BYTES_LEN));
+        String ip = CodeUtil.bytes2Ip(ArrayUtil.sub(bytes, 20, 24));
+        int port = CodeUtil.bytes2Port(ArrayUtil.sub(bytes, 24, Config.NODE_BYTES_LEN));
+        this.address = ip.concat(":"+port);
         initHexStrNodeId();
     }
 
-    public Node(byte[] nodeIdBytes, String ip, Integer port) {
+    public Node(byte[] nodeIdBytes, String address) {
         this.nodeIdBytes = nodeIdBytes;
-        this.ip = ip;
-        this.port = port;
+        this.address = address;
         initHexStrNodeId();
 
     }
 
-    public Node(byte[] nodeIdBytes, String ip, Integer port, Integer rank) {
+    public Node(byte[] nodeIdBytes, String address, Integer rank) {
         this.nodeIdBytes = nodeIdBytes;
-        this.ip = ip;
-        this.port = port;
+        this.address = address;
         this.rank = rank;
         initHexStrNodeId();
     }
 
     public Node(byte[] nodeIdBytes, InetSocketAddress sender, Integer rank) {
         this.nodeIdBytes = nodeIdBytes;
-        this.ip = BTUtil.getIpBySender(sender);
-        this.port = sender.getPort();
+        this.address = NetUtil.toAddress(BTUtil.getIpBySender(sender),sender.getPort());
         this.rank = rank;
         initHexStrNodeId();
     }
@@ -172,5 +172,9 @@ public class Node implements Serializable {
     public void initHexStrNodeId() {
         if(this.nodeIdBytes != null)
             this.nodeId = CodeUtil.bytes2HexStr(this.nodeIdBytes);
+    }
+
+    public String getIp(){
+        return this.address.split(":")[0];
     }
 }
