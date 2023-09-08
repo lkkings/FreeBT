@@ -9,6 +9,7 @@ import com.lkd.bt.spider.filter.InfoHashFilter;
 import com.lkd.bt.spider.socket.RoutingTable;
 import com.lkd.bt.spider.socket.Sender;
 import com.lkd.bt.spider.util.BTUtil;
+import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RHyperLogLog;
@@ -69,6 +70,10 @@ public class GetPeersTask extends Task implements Pauseable {
 	 * 入队并做双重过滤去重处理
 	 */
 	public void put(String infoHashHexStr) {
+		if(infoHashHexStr.length()== 40){
+			log.error("{}info_hash length error -{}",LOG,infoHashHexStr);
+			return;
+		}
 		if (filter.put(infoHashHexStr) && rFilter.add(infoHashHexStr)) {
 			queue.offer(infoHashHexStr);
 		}
@@ -134,7 +139,7 @@ public class GetPeersTask extends Task implements Pauseable {
 			//目标地址
 			List<InetSocketAddress> addresses = nodeList.stream().map(Node::toAddress).collect(Collectors.toList());
 			//批量发送
-			this.sender.getPeersBatch(addresses, config.getMain().getNodeIds().get(i), new String(CodeUtil.hexStr2Bytes(infoHashHexStr)), messageId, i);
+			this.sender.getPeersBatch(addresses, config.getMain().getNodeIds().get(i), new String(CodeUtil.hexStr2Bytes(infoHashHexStr), CharsetUtil.ISO_8859_1), messageId, i);
 		}
 		//存入缓存
 		rMapCache.put(messageId, new GetPeersSendInfo(infoHashHexStr).put(nodeIdList));

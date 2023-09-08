@@ -2,6 +2,7 @@ package com.lkd.bt.spider.socket;
 
 import com.lkd.bt.common.exception.BTException;
 import com.lkd.bt.common.util.BeanUtil;
+import com.lkd.bt.common.util.CodeUtil;
 import com.lkd.bt.spider.config.Config;
 import com.lkd.bt.spider.dto.bt.AnnouncePeer;
 import com.lkd.bt.spider.dto.bt.FindNode;
@@ -9,11 +10,11 @@ import com.lkd.bt.spider.dto.bt.GetPeers;
 import com.lkd.bt.spider.dto.bt.Ping;
 import com.lkd.bt.spider.entity.Node;
 import com.lkd.bt.spider.task.Pauseable;
-import com.lkd.bt.spider.util.BTUtil;
 import com.lkd.bt.spider.util.Bencode;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.util.CharsetUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +46,7 @@ public class Sender implements Pauseable {
     private  final ReentrantLock getPeersLock = new ReentrantLock();
     private Condition getPeersCondition;
 
-    private Config config;
+    private final Config config;
     private  int getPeersPauseMS;
     /**
      * 使用channel发送消息
@@ -81,7 +83,8 @@ public class Sender implements Pauseable {
      */
     @SneakyThrows
     public  void findNode(InetSocketAddress address, String nodeId,String targetNodeId,int index) {
-        FindNode.Request request = new FindNode.Request(BTUtil.generateNeighborNodeIdString(nodeId), targetNodeId);
+        byte[] bytes = nodeId.getBytes(CharsetUtil.ISO_8859_1);
+        FindNode.Request request = new FindNode.Request(CodeUtil.generateSimilarInfoHashString(bytes,config.getMain().getSimilarNodeIdNum()), targetNodeId);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(request)), address,index);
     }
 
@@ -102,7 +105,7 @@ public class Sender implements Pauseable {
      * 回复find_node回复
      */
     public  void findNodeReceive(String messageId, InetSocketAddress address, String nodeId, List<Node> nodeList, int index) {
-        FindNode.Response response = new FindNode.Response(nodeId, new String(Node.toBytes(nodeList)),messageId);
+        FindNode.Response response = new FindNode.Response(nodeId, new String(Node.toBytes(nodeList), CharsetUtil.ISO_8859_1),messageId);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address,index);
     }
 
@@ -122,7 +125,7 @@ public class Sender implements Pauseable {
      * 回复get_peers
      */
     public  void getPeersReceive(String messageId,InetSocketAddress address, String nodeId, String token, List<Node> nodeList,int index) {
-        GetPeers.Response response = new GetPeers.Response(nodeId, token, new String(Node.toBytes(nodeList)),messageId);
+        GetPeers.Response response = new GetPeers.Response(nodeId, token, new String(Node.toBytes(nodeList), CharsetUtil.ISO_8859_1),messageId);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address,index);
     }
 

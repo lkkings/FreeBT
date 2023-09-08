@@ -6,6 +6,7 @@ import com.lkd.bt.spider.util.BTUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.awt.*;
 import java.util.Random;
 
 /**

@@ -184,12 +184,11 @@ public class RoutingTable {
      * 新增节点
      */
     public boolean put(Node node) {
-        //nodeIds -> 160位二进制
-        byte[] bits = CodeUtil.getBitAll(node.getNodeIdBytes());
-
         TrieNode currentNode = root;
         TrieNode nextNode;
         try {
+            //nodeIds -> 160位二进制
+            byte[] bits = CodeUtil.getBitAll(node.getNodeIdBytes());
             for (int i = 0; i < MAX_PREFIX_LEN; i++) {
                 //获取下一节点(根据nodeId字节数组的第i位)
                 nextNode = currentNode.next[bits[i]];
@@ -305,16 +304,16 @@ public class RoutingTable {
         try {
             for (int i = 0; i <= MAX_PREFIX_LEN; i++) {
 
-                    //获取下一节点(根据nodeId字节数组的第i位)
-                    TrieNode nextNode = currentNode.next[bits[i]];
-                    //如果下一节点不为空
-                    if (nextNode != null) {
-                        currentNode = nextNode;
-                        continue;
-                    }
-                    //为空则搜索该节点的nodes
-                    if (currentNode.count == 0)
-                        return null;
+                //获取下一节点(根据nodeId字节数组的第i位)
+                TrieNode nextNode = currentNode.next[bits[i]];
+                //如果下一节点不为空
+                if (nextNode != null) {
+                    currentNode = nextNode;
+                    continue;
+                }
+                //为空则搜索该节点的nodes
+                if (currentNode.count == 0)
+                    return null;
                 try {
                     lock(currentNode.lockId);
                     Node node = currentNode.contain(nodeId);

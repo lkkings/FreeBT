@@ -1,15 +1,17 @@
 import cn.hutool.core.util.CharsetUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.clearspring.analytics.stream.cardinality.HyperLogLog;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Shorts;
 import com.lkd.bt.common.util.CodeUtil;
+import com.lkd.bt.common.util.RandomUtil;
 import lombok.SneakyThrows;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -58,5 +60,25 @@ public class UtilsTest{
     public void deque() throws InterruptedException {
         LinkedBlockingDeque<Object> objects = new LinkedBlockingDeque<>(10);
         objects.take();
+    }
+
+    @Test
+    public void bencode(){
+        //FROM MAP
+        byte[] t = RandomUtil.simpleNextBytes(20);
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("y","q");
+        HashMap<String, Object> aMap = new HashMap<>();
+        byte[] id = RandomUtil.simpleNextBytes(20);
+        byte[] target = RandomUtil.simpleNextBytes(20);
+        aMap.put("id",id);
+        aMap.put("target",target);
+        map.put("a",aMap);
+        map.put("q","find_node");
+        BencodeObject object = new BencodeObject(map);
+        byte[] encode = object.encode();
+        BencodeObject bencodeObject = new BencodeObject(encode);
+        Map<String, ?> object1 = bencodeObject.getObject();
+        print();
     }
 }

@@ -2,7 +2,6 @@ package com.lkd.bt.spider.task;
 
 import cn.hutool.core.util.ArrayUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lkd.bt.common.entity.Metadata;
 import com.lkd.bt.common.util.CodeUtil;
@@ -69,13 +68,6 @@ public class FetchMetadataTask extends Task{
 	 */
 	public void put(String infoHash, long startTime) {
 		queue.offer(new DelayInfoHash(infoHash, startTime));
-	}
-
-	/**
-	 * 入队
-	 */
-	public void put(String infoHash){
-		put(infoHash,System.currentTimeMillis());
 	}
 
 
@@ -402,7 +394,7 @@ public class FetchMetadataTask extends Task{
 	 * 通道初始化器
 	 */
 	@AllArgsConstructor
-	private class CustomChannelInitializer extends ChannelInitializer {
+	private  class CustomChannelInitializer extends ChannelInitializer{
 		private String infoHashHexStr;
 		private final Result result;
 

@@ -16,6 +16,7 @@ import com.lkd.bt.spider.socket.core.Process;
 import com.lkd.bt.spider.socket.core.UDPProcessor;
 import com.lkd.bt.spider.task.FindNodeTask;
 import com.lkd.bt.spider.util.BTUtil;
+import io.netty.util.CharsetUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBlockingQueue;
@@ -44,13 +45,11 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 
 	private final List<RoutingTable> routingTables;
 
-	private final FindNodeTask findNodeTask;
-
 	private final Sender sender;
 
 	private final RMapCache<String, GetPeersSendInfo> rMapCache;
 
-	private final RBlockingQueue<InetSocketAddress> findNodeQueue;
+	private final RBlockingQueue<Node> findNodeQueue;
 
 	private final InfoHashServiceImpl infoHashService;
 
@@ -67,12 +66,12 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 
 		//查询缓存
 		GetPeersSendInfo getPeersSendInfo = rMapCache.get(message.getMessageId());
-		//查询rMap,此处rMap不可能不存在
-		Map<String, Object> rMap = BTUtil.getParamMap(rawMap, "r", "");
 		//缓存过期，则不做任何处理了
 		if (getPeersSendInfo == null) return true;
+		//查询rMap,此处rMap不可能不存在
+		Map<String, Object> rMap = BTUtil.getParamMap(rawMap, "r", "");
 
-		byte[] id = BTUtil.getParamString(rMap, "id", "GET_PEERS-RECEIVE,找不到id参数.map:" + rMap).getBytes();
+		byte[] id = BTUtil.getParamString(rMap, "id", "GET_PEERS-RECEIVE,找不到id参数.map:" + rMap).getBytes(CharsetUtil.ISO_8859_1);
 		//如果返回的是nodes
 		if (rMap.get("nodes") != null) {
 			return nodesHandler(message, sender, index, routingTable, getPeersSendInfo, rMap, id);
@@ -101,7 +100,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		}
 		//将peers连接为字符串
 		String address = BTUtil.getPeerAddress(rawPeerList);
-		log.info("{}发送者:{},info_hash:{},消息id:{},返回peers:{}", LOG, sender, getPeersSendInfo.getInfoHash(), message.getMessageId(),address);
+		//log.info("{}发送者:{},info_hash:{},消息id:{},返回peers:{}", LOG, sender, getPeersSendInfo.getInfoHash(), message.getMessageId(),address);
 		//清除该任务缓存
 		rMap.remove(message.getMessageId());
 		//入库
@@ -109,9 +108,10 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 
 		//节点入库
 		nodeService.save(new Node(null, BTUtil.getIpBySender(sender), sender.getPort()));
-		routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode()));
+		Node node = new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode());
+		routingTable.put(node);
 		//并向该节点发送findNode请求
-		findNodeQueue.offer(sender);
+		findNodeQueue.offer(node);
 		return true;
 	}
 
@@ -136,7 +136,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		nodeList.forEach(item -> this.sender.findNode(item.toAddress(), nodeIds.get(index), BTUtil.generateNodeIdString(), index));
 		//将消息发送者加入路由表.
 		routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
-		log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回nodes", LOG, sender, getPeersSendInfo.getInfoHash(), message.getMessageId());
+		//log.info("{}GET_PEERS_RECEIVE,发送者:{},info_hash:{},消息id:{},返回nodes", LOG, sender, getPeersSendInfo.getInfoHash(), message.getMessageId());
 
 		//取出未发送过请求的节点
 		List<Node> unSentNodeList = nodeList.stream().filter(node -> !getPeersSendInfo.contains(node.getNodeIdBytes())).toList();

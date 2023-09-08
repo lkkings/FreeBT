@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.springframework.util.CollectionUtils;
 
+import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.Date;
 import java.util.List;
@@ -24,8 +25,8 @@ import java.util.List;
 @Accessors(chain = true)
 @AllArgsConstructor
 @NoArgsConstructor
-public class Node {
-    private Long id;
+public class Node implements Serializable {
+    private transient  Long id;
 
 
     /**
@@ -41,27 +42,27 @@ public class Node {
     /**
      * 创建时间
      */
-    private Date createTime;
+    private transient  Date createTime;
 
     /**
      * 修改时间
      */
-    private Date updateTime;
+    private transient  Date updateTime;
 
     /**
      * nodeIds 字节表示
      */
-    private byte[] nodeIdBytes;
+    private transient  byte[] nodeIdBytes;
 
     /**
      * 最后活动时间(收到请求或收到回复)
      */
-    private Date lastActiveTime = new Date();
+    private transient  Date lastActiveTime = new Date();
 
     /**
      * 权重,允许并发导致的一些误差
      */
-    private Integer rank = 0;
+    private transient  Integer rank = 0;
 
 
 
@@ -160,9 +161,6 @@ public class Node {
     }
 
     public Node(byte[] nodeIdBytes, InetSocketAddress sender, Integer rank) {
-        if(nodeIdBytes.length != 20){
-            System.out.println();
-        }
         this.nodeIdBytes = nodeIdBytes;
         this.ip = BTUtil.getIpBySender(sender);
         this.port = sender.getPort();

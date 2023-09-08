@@ -46,27 +46,32 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor {
 
     private final InfoHashServiceImpl infoHashService;
 
-    private final RBlockingQueue<InetSocketAddress> findNodeQueue;
+    private final RBlockingQueue<Node> findNodeQueue;
 
     @Override
     public boolean process1(Process process) {
         AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(process.getRawMap(), process.getSender().getPort());
-        log.info("{}收到消息.",LOG);
+        String infoHashHexStr = requestContent.getInfo_hash();
+        int index  = process.getIndex();
+        byte[] nodeIdBytes = CodeUtil.hexStr2Bytes(requestContent.getId());
+        if ((infoHashHexStr.length() != 40) || (nodeIdBytes.length != 20)){
+            log.error("错误的info_hash:{} 或nodeId length: {}",infoHashHexStr,nodeIdBytes.length);
+            return true;
+        }
+
         //入库
-        infoHashService.saveInfoHash(requestContent.getInfo_hash(), BTUtil.getIpBySender(process.getSender()) + ":" + requestContent.getPort() + ";");
-        //尝试从get_peers等待任务队列删除该任务,正在进行的任务可以不删除..因为删除比较麻烦.要遍历value
-        getPeersTask.remove(requestContent.getInfo_hash());
+        infoHashService.saveInfoHash(infoHashHexStr, BTUtil.getIpBySender(process.getSender()) + ":" + requestContent.getPort() + ";");
         //回复
-        this.sender.announcePeerReceive(process.getMessage().getMessageId(), process.getSender(), nodeIds.get(process.getIndex()), process.getIndex());
-        Node node = new Node(CodeUtil.hexStr2Bytes(requestContent.getId()), process.getSender(), NodeRankEnum.ANNOUNCE_PEER.getCode());
+        this.sender.announcePeerReceive(process.getMessage().getMessageId(), process.getSender(), nodeIds.get(process.getIndex()), index);
+        Node node = new Node(nodeIdBytes, process.getSender(), NodeRankEnum.ANNOUNCE_PEER.getCode());
         //加入路由表
-        routingTables.get(process.getIndex()).put(node);
+        routingTables.get(index).put(node);
         //入库
         nodeService.save(node);
         //加入任务队列
-        getPeersTask.put(requestContent.getInfo_hash());
+        getPeersTask.put(infoHashHexStr);
         //加入findNode任务队列
-        findNodeQueue.offer(process.getSender());
+        findNodeQueue.offer(node);
         return true;
     }
 

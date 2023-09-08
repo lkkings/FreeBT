@@ -9,6 +9,7 @@ import com.lkd.bt.spider.socket.Sender;
 import com.lkd.bt.spider.socket.core.Process;
 import com.lkd.bt.spider.socket.core.UDPProcessor;
 import com.lkd.bt.spider.util.BTUtil;
+import io.netty.util.CharsetUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
@@ -38,11 +39,11 @@ public class FindNodeRequestUDPProcessor extends UDPProcessor {
 		//截取出要查找的目标nodeId和 请求发送方nodeId
 		Map<String, Object> aMap = BTUtil.getParamMap(process.getRawMap(), "a", "FIND_NODE,找不到a参数.map:" + process.getRawMap());
 		byte[] targetNodeId = BTUtil.getParamString(aMap, "target", "FIND_NODE,找不到target参数.map:" + process.getRawMap())
-				.getBytes();
-		byte[] id = BTUtil.getParamString(aMap, "id", "FIND_NODE,找不到id参数.map:" + process.getRawMap()).getBytes();
+				.getBytes(CharsetUtil.ISO_8859_1);
+		byte[] id = BTUtil.getParamString(aMap, "id", "FIND_NODE,找不到id参数.map:" + process.getRawMap()).getBytes(CharsetUtil.ISO_8859_1);
 		//查找
 		List<Node> nodes = routingTables.get(process.getIndex()).getForTop8(targetNodeId);
-		log.info("{}.发送者:{},返回的nodes:{}", LOG, sender,nodes);
+		//log.info("{}.发送者:{},返回的nodes:{}", LOG, process.getSender(),nodes);
 		this.sender.findNodeReceive(process.getMessage().getMessageId(), process.getSender(),
 				nodeIds.get(process.getIndex()), nodes,process.getIndex());
 		//操作路由表

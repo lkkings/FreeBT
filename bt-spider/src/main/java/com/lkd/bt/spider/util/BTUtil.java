@@ -12,6 +12,7 @@ import com.lkd.bt.spider.entity.Node;
 import com.lkd.bt.spider.enums.QEnum;
 import com.lkd.bt.spider.enums.YEnum;
 import io.netty.channel.Channel;
+import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -50,7 +51,7 @@ public class BTUtil {
      * 生成一个随机的nodeID
      */
     public static String generateNodeIdString() {
-        return new String(generateNodeId());
+        return new String(generateNodeId(), CharsetUtil.ISO_8859_1);
     }
 
 
@@ -64,7 +65,7 @@ public class BTUtil {
         if ((result = generator.getAndIncrement()) > maxMessageID) {
             generator.lazySet(1);
         }
-        return new String(CodeUtil.int2TwoBytes(result));
+        return new String(CodeUtil.int2TwoBytes(result),CharsetUtil.ISO_8859_1);
     }
 
     /**
@@ -73,17 +74,6 @@ public class BTUtil {
     public static String generateMessageID() {
         return generateMessageID(messageIDGenerator);
     }
-    public static byte[] generateNeighborNodeId(String nodeId) {
-        SecureRandom random = new SecureRandom();
-        byte[] preNodeIdBytes = ArrayUtil.sub(CodeUtil.hexStr2Bytes(nodeId),0,16);
-        byte[] sufNodeIdBytes = ArrayUtil.sub(generateNodeId(),16,20);
-        return ArrayUtil.addAll(preNodeIdBytes,sufNodeIdBytes);
-    }
-
-    public static String generateNeighborNodeIdString(String nodeId) {
-        return new String(generateNeighborNodeId(nodeId));
-    }
-
     /**
      * 生成一个递增的t,相当于消息id
      * 用于get_peers请求
@@ -183,7 +173,7 @@ public class BTUtil {
      * 从回复的r对象中取出nodes
      */
     public static List<Node> getNodeListByRMap(Map<String, Object> rMap) {
-        byte[] nodesBytes = BTUtil.getParamString(rMap, "nodes", "FIND_NODE,找不到nodes参数.rMap:" + rMap).getBytes();
+        byte[] nodesBytes = BTUtil.getParamString(rMap, "nodes", "FIND_NODE,找不到nodes参数.rMap:" + rMap).getBytes(CharsetUtil.ISO_8859_1);
         List<Node> nodeList = new LinkedList<>();
         for (int i = 0; i + Config.NODE_BYTES_LEN < nodesBytes.length; i += Config.NODE_BYTES_LEN) {
             //byte[26] 转 Node

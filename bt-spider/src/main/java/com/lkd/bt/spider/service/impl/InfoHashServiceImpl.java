@@ -23,16 +23,10 @@ public class InfoHashServiceImpl extends ServiceImpl<InfoHashMapper, InfoHash> i
     @Override
     public void saveInfoHash(String infoHashHexStr,String peersStr) {
         InfoHash infoHash = this.getOne(new LambdaQueryWrapper<InfoHash>().eq(InfoHash::getInfoHash,infoHashHexStr));
-        if (infoHash == null) {
-            //如果为空,则新建
-            infoHash = InfoHash.builder()
-                    .infoHash(infoHashHexStr)
-                    .peerAddress(peersStr)
-                    .build();
-        } else if(StringUtils.isEmpty(infoHash.getPeerAddress()) || infoHash.getPeerAddress().split(";").length <= 16){
-            //如果不为空,并且长度小于一定值,则追加
-            infoHash.setPeerAddress(infoHash.getPeerAddress()+ peersStr);
-        }
-        this.save(infoHash);
+        infoHash = InfoHash.builder()
+                .infoHash(infoHashHexStr)
+                .peerAddress(infoHash.getPeerAddress().concat(peersStr))
+                .build();
+        this.saveOrUpdate(infoHash);
     }
 }

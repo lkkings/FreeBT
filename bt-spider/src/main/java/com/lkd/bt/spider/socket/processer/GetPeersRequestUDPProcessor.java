@@ -11,6 +11,7 @@ import com.lkd.bt.spider.socket.core.Process;
 import com.lkd.bt.spider.socket.core.UDPProcessor;
 import com.lkd.bt.spider.task.GetPeersTask;
 import com.lkd.bt.spider.util.BTUtil;
+import io.netty.util.CharsetUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
@@ -45,17 +46,18 @@ public class GetPeersRequestUDPProcessor extends UDPProcessor {
 		int index = process.getIndex();
 
 		Map<String, Object> aMap = BTUtil.getParamMap(rawMap, "a", "GET_PEERS,找不到a参数.map:" + rawMap);
-		byte[] infoHash = BTUtil.getParamString(aMap, "info_hash", "GET_PEERS,找不到info_hash参数.map:" + rawMap).getBytes();
-		byte[] id = BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + rawMap).getBytes();
-		List<Node> nodes = routingTables.get(index).getForTop8(infoHash);
-		log.info("{}发送者:{},info_hash:{}", LOG, sender,infoHash);
+		byte[] infoHashByte = BTUtil.getParamString(aMap, "info_hash", "GET_PEERS,找不到info_hash参数.map:" + rawMap).getBytes(CharsetUtil.ISO_8859_1);
+		byte[] id = BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + rawMap).getBytes(CharsetUtil.ISO_8859_1);
+		String infoHash = CodeUtil.bytes2HexStr(infoHashByte);
+		List<Node> nodes = routingTables.get(index).getForTop8(infoHashByte);
+		//log.info("{}发送者:{},info_hash:{}", LOG, sender,infoHash);
 		//回复时,将自己的nodeId伪造为 和该节点异或值相差不大的值
 		this.sender.getPeersReceive(process.getMessage().getMessageId(), sender,
 				CodeUtil.generateSimilarInfoHashString(id, config.getMain().getSimilarNodeIdNum()),
 				config.getMain().getToken(), nodes, index);
 		//加入路由表
 		routingTables.get(index).put(new Node(id, sender, NodeRankEnum.GET_PEERS.getCode()));
-		getPeersTask.put(CodeUtil.bytes2HexStr(infoHash));
+		getPeersTask.put(infoHash);
 		return true;
 	}
 

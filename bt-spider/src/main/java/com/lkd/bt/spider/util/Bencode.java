@@ -4,6 +4,7 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.lkd.bt.common.exception.BTException;
 import com.lkd.bt.common.util.MArrayUtil;
+import io.netty.util.CharsetUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +12,7 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,15 +22,20 @@ import java.util.function.BiFunction;
 /**
  * Bencode 编解码类
  */
+
 @Component
 public class Bencode {
     private static final String LOG = "[Bencode]";
 
+    //编码
+    private Charset charset = CharsetUtil.ISO_8859_1;
+
     //函数数组
     @SuppressWarnings("unchecked")
-    private final BiFunction<byte[], Integer, MethodResult<?>>[] functions = new BiFunction[4];
-    //":"字符串转byte
-    private byte stringTypeSeparator;
+    private BiFunction<byte[], Integer, MethodResult>[] functions = new BiFunction[4];
+
+    //string类型分隔符(冒号)的byte形式.
+    private  byte stringTypeSeparator;
 
     //bencode编码中的若干类型前缀和后缀------------
     private final String intTypePre = "i";
@@ -36,15 +43,26 @@ public class Bencode {
     private final String dictTypePre = "d";
     private final String typeSuf = "e";
 
-    @Autowired
+    public Bencode(Charset charset) {
+        this.charset = charset;
+        init();
+    }
+
+    public Bencode() {
+        init();
+    }
+
     public void init() {
-        stringTypeSeparator = ":".getBytes()[0];
+        stringTypeSeparator = ":".getBytes(charset)[0];
+
         //使用方法引用简写
         functions[0] = this::decodeDict;
         functions[1] = this::decodeString;
         functions[2] = this::decodeInt;
         functions[3] = this::decodeList;
     }
+
+//解码相关------------------------------------------------------------------------------------
 
     /**
      * String 解码
@@ -53,14 +71,15 @@ public class Bencode {
     public MethodResult<String> decodeString(byte[] bytes, int start) {
         if (start >= bytes.length || bytes[start] < '0' || bytes[start] > '9')
             throw new BTException(LOG + "解码String类型异常,start异常. start:" + start);
+
         //从指定位置开始向后查找冒号,如果没有返回-1
-        int separatorIndex = MArrayUtil.indexOf(bytes, stringTypeSeparator,start);
+        int separatorIndex = MArrayUtil.indexOf(bytes, stringTypeSeparator, start);
         if (separatorIndex == -1)
             throw new BTException(LOG + "解码String类型异常,无法找到分隔符");
         //截取开始位置 到 冒号的字节, 转为数字,也就是该字符的长度
         int strLen;
         try {
-            strLen = Integer.parseInt(new String(ArrayUtil.sub( bytes,start, separatorIndex)));
+            strLen = Integer.parseInt(new String(ArrayUtil.sub(bytes, start, separatorIndex), charset));
         } catch (NumberFormatException e) {
             throw new BTException(LOG + "解码String类型异常,长度非int类型");
         }
@@ -70,7 +89,7 @@ public class Bencode {
         int endIndex = separatorIndex + strLen + 1;
         if (separatorIndex > bytes.length)
             throw new BTException(LOG + "解码String类型异常,长度超出");
-        return new MethodResult<>(new String(ArrayUtil.sub(bytes, separatorIndex + 1, endIndex)), endIndex);
+        return new MethodResult<>(new String(ArrayUtil.sub(bytes, separatorIndex + 1, endIndex), charset), endIndex);
     }
 
     /**
@@ -81,14 +100,14 @@ public class Bencode {
         if (start >= bytes.length || bytes[start] != intTypePre.charAt(0))
             throw new BTException(LOG + "解码Int类型异常,start异常. start:" + start);
         //结束索引
-        int endIndex = MArrayUtil.indexOf(bytes, typeSuf.getBytes()[0],start);
+        int endIndex = MArrayUtil.indexOf(bytes, typeSuf.getBytes(charset)[0], start + 1);
         if (endIndex == -1)
             throw new BTException(LOG + "解码Int类型异常,无法找到结束符");
         long result;
         try {
             //此处的解码必须为long,因为metadata中的一些数值可能超过int.
             //该类的其他int是没事的,因为只是索引大小.暂时不做字节长度超过int的考虑
-            result = Long.parseLong(new String(ArrayUtil.sub(bytes, start + 1, endIndex)));
+            result = Long.parseLong(new String(ArrayUtil.sub(bytes, start + 1, endIndex),charset));
         } catch (NumberFormatException e) {
             throw new BTException(LOG + "解码Int类型异常,值非int类型");
         }
@@ -104,12 +123,12 @@ public class Bencode {
             throw new BTException(LOG + "解码List类型异常,start异常. start:" + start);
         //循环l后面的每个字节
         int i = start + 1;
-        while (i < bytes.length) {
+        for (; i < bytes.length; ) {
             //如果是结束字符,退出循环
-            if (bytes[i] == typeSuf.getBytes()[0])
+            if (bytes[i] == typeSuf.getBytes(charset)[0])
                 break;
             //解码为任意类型
-            MethodResult<?> methodResult = decodeAny(bytes, i);
+            MethodResult methodResult = decodeAny(bytes, i);
             //索引由具体解码方法控制
             i = methodResult.index;
             //增加到结果
@@ -130,20 +149,21 @@ public class Bencode {
 
         //循环d后面的每个字节
         int i = start + 1;
-        while (i < bytes.length) {
-            String item = new String(new byte[]{bytes[i]});
+        for (; i < bytes.length; ) {
+            String item = new String(new byte[]{bytes[i]}, charset);
             //如果是结束字符,退出循环
             if (item.equals(typeSuf))
                 break;
+
             //如果不为数字,格式异常(因为每次循环解析一个key/value对,而key是string类型,string类型的编码是长度在前)
             if (!StrUtil.isNumeric(item))
-                throw new BTException(LOG + "解码Dict异常,key/value对非数字开头");
+                throw new BTException(LOG + "解码Dict异常,key/value对非数组开头");
             //解析key
             MethodResult<String> keyMethodResult = decodeString(bytes, i);
             //更新索引
             i = keyMethodResult.index;
             //解析value
-            MethodResult<?> valueMethodResult = decodeAny(bytes, i);
+            MethodResult valueMethodResult = decodeAny(bytes, i);
             //更新索引
             i = valueMethodResult.index;
             //放入
@@ -157,14 +177,14 @@ public class Bencode {
     /**
      * 任意类型解码
      */
-    public MethodResult<?> decodeAny(byte[] bytes, int start) {
-        for (BiFunction<byte[], Integer, MethodResult<?>> function : functions) {
+    public MethodResult decodeAny(byte[] bytes, int start) {
+        for (BiFunction<byte[], Integer, MethodResult> function : functions) {
             try {
                 return function.apply(bytes, start);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
             }
         }
-            throw new BTException(LOG + "解码失败.start:" + start +",bytes:" + new String(bytes));
+        throw new BTException(LOG + "解码失败.start:" + start +",bytes:" + new String(bytes,charset));
 
     }
 
@@ -252,7 +272,7 @@ public class Bencode {
      * string to bytes
      */
     public byte[] toBytes(String string) {
-        return string.getBytes();
+        return string.getBytes(this.charset);
     }
 
     /**
@@ -270,7 +290,7 @@ public class Bencode {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class MethodResult<T> {
+    private static class MethodResult<T> {
         private T value;
         private int index;
     }
@@ -278,3 +298,4 @@ public class Bencode {
 
 
 }
+

@@ -7,6 +7,7 @@ import com.lkd.bt.spider.dto.bt.base.CommonResponse;
 import com.lkd.bt.spider.enums.QEnum;
 import com.lkd.bt.spider.enums.YEnum;
 import com.lkd.bt.spider.util.BTUtil;
+import io.netty.util.CharsetUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -60,7 +61,7 @@ public abstract class AnnouncePeer {
         public  RequestContent (Map<String, Object> map,int defaultPort) {
             Map<String, Object> aMap = BTUtil.getParamMap(map, "a", "ANNOUNCE_PEER,找不到a参数.map:" + map);
             info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "ANNOUNCE_PEER,找不到info_hash参数.map:" + map)
-                    .getBytes());
+                    .getBytes(CharsetUtil.ISO_8859_1));
             if (aMap.get("implied_port") == null || ((long) aMap.get("implied_port") )== 0) {
                 Object portObj = aMap.get("port");
                 if(portObj == null)
@@ -68,7 +69,7 @@ public abstract class AnnouncePeer {
                 port = ((Long) portObj).intValue();
             }else
                 port = defaultPort;
-            id = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "ANNOUNCE_PEER,找不到id参数.map:" + map).getBytes());
+            id = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "ANNOUNCE_PEER,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
 
         }
     }
