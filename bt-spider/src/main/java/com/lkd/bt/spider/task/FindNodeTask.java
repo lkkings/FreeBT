@@ -170,7 +170,6 @@ public class FindNodeTask extends Task implements Pauseable {
                         //轮询使用每个端口向外发送请求
                         for (j = 0; j <  nodeIds.size(); j++) {
                             Node node = queue.take();
-                            log.info("{}发现节点{}",LOG,node);
                             sender.findNode(node.toAddress(), node.getNodeId(), BTUtil.generateNodeIdString(),j);
                             pause(lock, condition, pauseTime, milliseconds);
                         }
@@ -255,7 +254,6 @@ public class FindNodeTask extends Task implements Pauseable {
                 log.info("{}解析MessageInfo异常.异常:{}", LOG, e.getMessage(), e);
                 return;
             }
-            log.info("{}请求方法{}",LOG,message.getMethod().getMessage());
             udpProcessorManager.process(new Process(message, map, sender, this.index));
         }
 
